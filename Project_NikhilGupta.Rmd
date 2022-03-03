@@ -1,0 +1,439 @@
+---
+title: "Life Expectancy Analysis"
+author: "Nikhil Gupta"
+date: "11/15/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# **INTRODUCTION** : 
+
+Life Expectancy of human life has been one of the central idea behind various researches and increasing it has been a constant effort of humanity.Thus, understanding the available data about it as well as various parameters that effect the life expectancy becomes increasingly important. In light of this notion, this study is trying to fundamentally analyse the available LIfe expectancy data as well as make suggestions on how we can try to improve it by influencing various primary and secondary parameters associated with it.
+This study will focus on immunization factors, mortality factors, economic factors, social factors and other health related factors as well. Since the observations this dataset are based on different countries, it will be easier for a country to determine the predicting factor which is contributing to lower value of life expectancy. This will help in suggesting a country which area should be given importance in order to efficiently improve the life expectancy of its population.
+
+# **DATA SOURCE** :
+
+This given data has been sourced from the data repository of *Kaggle*.
+
+url : *https://www.kaggle.com/kumarajarshi/life-expectancy-who*
+
+This dataset related to life expectancy, health factors for 193 countries has been collected from the The Global Health Observatory (GHO) data repository under World Health Organization (WHO) and its corresponding economic data was collected from United Nation website. Among all categories of health-related factors only those critical factors were chosen which are more representative. It has been observed that in the 15 years period ranging from 2000-2015 , there has been a huge development in health sector resulting in improvement of human mortality rates especially in the developing nations in comparison to the past 30 years. Therefore, in this project we have considered data from year 2000-2015 for 193 countries for further analysis. The individual data files have been merged together into a single dataset.  All predicting variables was then divided into several broad categories:​Immunization related factors, Mortality factors, Economical factors and Social factors.
+
+# **QUESTIONS OF INTEREST** :
+
+The data-set aims to answer the following key questions:
+-Compare the life expectancy trends of Developed world and Developing world.
+
+-Does various predicting factors which has been chosen initially really affect the Life expectancy? What are the predicting variables actually affecting the life expectancy?
+
+-Does Life Expectancy has positive or negative correlation with eating habits, lifestyle, exercise, smoking, drinking alcohol etc.
+
+-How does mortality factors like Infant and Adult mortality rates affect life expectancy?
+
+-What is the impact of Immunization coverage on life Expectancy?
+
+-What is the impact of increased health spending on the lifespan of humans?Analyse the relationship of various economic factors vis-a-vis Life Expectancy.
+
+-Find the mean life expectancy for all the people across globe, averaged over the given time period ?
+
+-Top 10 countries with highest and Least Life expectancy across globe ?
+
+-Probability density function of global Avg. Life Expectancies to find most likely L.E. for world countries.
+
+-Country-wise comparison of top performers : in terms of LIfe Expectancy
+
+-Linear Model to predict Life expectancy against the parameter of schooling
+
+# **DETAILED STATISTICAL ANALYSIS** :  
+
+## Importing relevant *libraries*
+
+```{r}
+library(readr)
+library(httr)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(readr)
+```
+## Importing the *data* for Analysis
+
+``` {r}
+data<- read_csv( "Life Expectancy Data.csv",show_col_types = FALSE)
+data
+
+```
+
+## Understanding the Data-set
+
+We are looking at the tibble and the summary statistics to get more insight about the data such as size of data, quantum of data, nature of data (clean/unclean).
+The above results indicates that some of the data entries are missing or N/A. The most of the missing data was for population, Hepatitis B and GDP. The missing data were from less known countries like Vanuatu, Tonga, Togo,Cabo Verde etc.The final merged file(final dataset) consists of 22 Columns and 2938 rows which meant 20 predicting variables.
+
+```{r}
+summary(data)
+```
+
+
+## **Cleaning** the data set
+
+looking at the *summary of the data* to see if there are any problems.
+Summary statistics show that there are many rows which contain NA values.Hence, cleaning the data by deleting the rows which contain NA's.
+
+```{r}
+data_clean <-na.omit(data)
+print(data_clean)
+```
+
+## Understanding the **Clean Data**
+
+Clearly, the summary of the clean data shows that there are no more missing data fields.Though the minimum value for certain attributes are still 0, but 0 is a possible minimum value for those columns. Hence assuming zero to be the part of data and retaining them in the clean dataset. After cleaning the datasets, the final cleaned tibble contains 1649 rows with 22 columns. 
+To get some more insight into the clean data, looking at the summary statistics.
+
+```{r}
+summary(data_clean)
+```
+
+## ** Data Visualization and Analysis**
+
+In order to answer the above mentioned questions of interest,we will be going through various visualizations along with their subsequent analysis in a orderly manner.
+
+
+### Comparing the life expectancy of Developed world and Developing world
+
+```{r}
+data_global_trend <- data_clean %>% group_by(Year,Status)%>% select(-c(Country))%>% summarise_each(funs( mean( .,na.rm = TRUE)))%>%ungroup()                                                                    
+ungroup(data_clean)
+print(data_global_trend)
+
+```
+
+#### Plotting the avg. Life expectancy trend for Developed Vs Developing. 
+
+Below is the plot of Avg. Life Expectancy of developed nations Vs developing nations, averaged over the past few years (2000-2015) period .
+
+
+```{r}
+data_global_trend %>%
+  ggplot(aes(x = Year, y = `Life expectancy`)) +
+  geom_line(aes(color = data_global_trend$`Life expectancy`, shape = data_global_trend$Status)) +
+  geom_point(aes(color = data_global_trend$`Life expectancy`, shape = data_global_trend$Status)) +
+  labs(shape = "Type", color = NULL)+
+  ylim(60,90)+
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "Avg Life Expectancy Trend", y= "Life Expectancy (in years)" )
+
+```
+#### Analyzing the above plots.
+
+As can be seen from the Plots, following observations are made :
+- Life expectancy of developed countries is significantly higher than developing countries (almost 10yr higher).
+- Though both developed and developing countries have shown an increase in Life expectancy but the increase is higher for developed countries as compared to developing countries.
+- Even the maximun Life expectancy for developing countries is lower than the least Life expectancy of developed countries.
+
+Lets cross-check the observations with the summary statistics.
+
+```{r}
+developed<- data_global_trend %>% filter (Status == "Developed")%>% select(Year,`Life expectancy`)
+developing<-data_global_trend %>% filter (Status == "Developing")%>% select(Year, `Life expectancy`)
+summary(developed)
+summary(developing)
+```
+The summary statistics are also in tune with the observations of the Plots, with min. and Max. values of Life Expectancy as follows:
+
+Developed : 76.08 to 81.03
+Developing : 66.68 to 71.40
+Gap b/w the two : approx: 10yrs
+
+
+### Finding the relationship between Avg Life Expectancy and various predicting variables.
+
+Preparing copies of data in relevant format.
+- global: containing data for both developed and developing nations
+- developed_stats : containing data for developed nations
+- developing_stats : containing data for developing nations
+
+```{r}
+
+global <- data_global_trend
+developed_stats<- data_global_trend %>% filter (Status == "Developed")
+developing_stats<- data_global_trend %>% filter (Status == "Developing")
+
+```
+
+#### Finding the relationship between Avg. Life Expectancy and Social factors like BMI and Drinking Alcohol.
+
+Plotting the required visualization.
+
+```{r}
+global %>%
+  ggplot(aes(x = Year, y =`Life expectancy` )) +
+  geom_line(aes(color = "`Life expectancy`")) +
+  geom_point(aes(color = "`Life expectancy`", shape = global$Status)) +
+  geom_line(aes(y = Alcohol, color = "Per Capita Alcohol Consumption")) +
+  geom_point(aes(y = Alcohol, color = "Per Capita Alcohol Consumption", shape= global$Status)) +
+  geom_line(aes(y = BMI, color = "BMI")) +
+  geom_point(aes(y = BMI, color = "BMI", shape = global$Status)) +
+  labs(shape = "Type", color = NULL) +
+  facet_wrap(~Status)
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "Life Expectancy Vs Per Capita Alcohol consumption (in litres)", y= NULL)
+```
+**Analyzing the above Plots** :
+
+
+The plots depict the trend of Life Expectancy against lifestyle factors of BMI and alcohol consumption.
+As per the Plots,
+- Developed countries have a more unhealthy Lifestyle as indicated by higher BMI and Higher per capita alcohol consumption.This may be partially true because of higher per capita income of developed countries thus more expenditure on drinks and food. But, Despite leading a more unhealthy lifestyle, Developed countries have a higher Life Expectancy as compared to developing countries. This suggest that lifestyle factors like alcohol consumption , BMI are not playing a major role in influencing the Life Expectancy. This is a little counter-intuitive and needs more detailed analysis from diverse datasets.
+- Another good observation is that with decrease in per capital alcohol consumption, there seems to be a general increase in the Avg. Life Expectancy for both developed and developing clusters.
+- The BMI data is very haphazard and any direct correlation with Life Expectancy seems to be a haste.
+
+#### Life Expectancy Vs Mortality Factors : Adult Mortality, Infant deaths, under 5 deaths and deaths due to HIV/AIDS
+
+Plotting the required visualization.
+
+```{r}
+global %>% 
+  ggplot(aes(x = Year, y =`Life expectancy` )) +
+  geom_line(aes(color = "`Life expectancy`" )) +
+  geom_point(aes(color = "`Life expectancy`", shape = global$Status)) +
+  geom_line(aes(y = `Adult Mortality`, color = "Adult Mortality")) +
+  geom_point(aes(y = `Adult Mortality`, color = "Adult Mortality", shape= global$Status)) +
+  geom_line(aes(y = `infant deaths`, color = "infant deaths")) +
+  geom_point(aes(y = `infant deaths`, color = "infant deaths", shape = global$Status)) +
+  geom_line(aes(y = `under-five deaths`, color = "under-five deaths")) +
+  geom_point(aes(y = `under-five deaths`, color = "under-five deaths", shape = global$Status)) +
+  geom_line(aes(y = `HIV/AIDS`, color = "HIV/AIDS deaths")) +
+  geom_point(aes(y = `HIV/AIDS`, color = "HIV/AIDS deaths", shape = global$Status)) +
+  scale_y_log10() +
+  facet_wrap(~Status) +
+  labs(shape = "Type", color = NULL) +
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "Life Expectancy Vs Mortality Factors", y= NULL)
+```
+
+ **Analysing the above Plots**
+
+-As can be seen from the plots, Developing nations have much higher mortality rates as compared to developed countries.
+Hence, all three mortality rates(Adult, infant and under-five) have a negative correlation with Life Expectancy.
+- The infant mortality rates and under-5-mortality rates are almost parallel curves suggesting similar factors like poor nutrition,level of vaccination, neonatal care etc. are at play.
+-The deaths due to HIV/AIDS are also significantly higher in developing countries resulting into higher overall mortality rates in them. But the Deaths due to HIV/AIDS are showing a decreasing trend with timein developing nations which can be one of the reasons for increasing Life expectancy with time.
+
+#### Average Life Expectancy Vs Immunization Factors.
+
+Considering immunization of 1year old child as the benchmark and vaccinations of Hepatitis B, Polio and Diphtheria as index.
+
+Plotting the required visualization.
+
+
+```{r}
+global %>% 
+  ggplot(aes(x = Year, y =`Life expectancy` )) +
+  geom_line(aes(color = "`Life expectancy`" )) +
+  geom_point(aes(color = "`Life expectancy`", shape = global$Status)) +
+  geom_line(aes(y = `Diphtheria`, color = "Diphtheria")) +
+  geom_point(aes(y = `Diphtheria`, color = "Diphtheria", shape= global$Status)) +
+  geom_line(aes(y = `Hepatitis B`, color = "Hepatitis B")) +
+  geom_point(aes(y = `Hepatitis B`, color = "Hepatitis B", shape = global$Status)) +
+  geom_line(aes(y = `Polio`, color = "Polio")) +
+  geom_point(aes(y = `Polio`, color = "Polio", shape = global$Status)) +
+  facet_wrap(~Status) +
+  labs(shape = "Type", color = NULL) +
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "Life Expectancy Vs Immunization Factors", y= NULL)
+```
+ **Analysis of the above plots** .
+
+- The above curve does not show any definite trend, specially in the data of Hepatitis-B vaccination. Hence no direct corelation with the LIfe expectancy is clear.
+- But one good observation is that overall there is higher level of immunization in the developed countries as compared to developing one, which can be a factor for higher Life expectancy of developed world.
+
+#### Average Life Expectancy Vs Economic Factors.
+
+Looking at the various economic factors like % expenditure, Total Expenditure, GDP of the nation and income composition
+
+```{r}
+global %>% 
+  ggplot(aes(x = Year, y =`Life expectancy` )) +
+  geom_line(aes(color = "`Life expectancy`" )) +
+  geom_point(aes(color = "`Life expectancy`", shape = global$Status)) +
+  geom_line(aes(y = `percentage expenditure`, color = "% expenditure")) +
+  geom_point(aes(y = `percentage expenditure`, color = "% expenditure", shape= global$Status)) +
+  geom_line(aes(y = `Total expenditure`, color = "Total expenditure")) +
+  geom_point(aes(y = `Total expenditure`, color = "Total expenditure", shape = global$Status)) +
+  geom_line(aes(y = `Income composition of resources`, color = "Income composition")) +
+  geom_point(aes(y = `Income composition of resources`, color = "Income composition", shape = global$Status)) +
+  geom_line(aes(y = GDP, color = "GDP")) +
+  geom_point(aes(y = GDP, color = "GDP", shape= global$Status)) +
+  facet_wrap(~Status) +
+  scale_y_log10() +
+  labs(shape = "Type", color = NULL) +
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "Life Expectancy Vs Economic Factors", y= NULL)
+```
+
+**Analysing the above Plots.**
+
+
+As can be seen from the graphs :
+
+- All the economic factors have a positive correlation with the Life expectancy. This suggests better the fiscal health of the nation --> better is the expenditure on health infrastructure and services --> better is the Life expectancy. 
+- Also, as expected developed nations have stronger fiscal health as compared to developing nations.
+
+### Global Life Expectancy Analysis : Country Wise
+
+Preparing copies of data in relevant format.
+- data_countries : country-wise avg statistics over the period of 2000 to 2015 
+- d2 : a copy of data_countries with a shorter name.
+
+```{r}
+
+data_countries <- data_clean %>%group_by(Country,Status)%>% select(-c(Year))%>% summarise_each(funs( mean(.,na.rm = TRUE)))%>%ungroup()
+ungroup(data_clean)
+print(data_countries)
+
+```
+
+#### Global Average Life Expectancy.
+
+Finding the mean life expectancy for all the people across globe, averaged over the period of 2000-2015 
+
+The finding is : 68.62 years
+
+```{r}
+d2<- data_countries
+global_avg_LE = mean(d2$`Life expectancy`) 
+print(global_avg_LE)
+```
+  
+#### Top 10 countries with **highest Life expectancy** across globe, averaged over the period of 2000-2015
+
+```{r}
+
+d2%>% slice_max(`Life expectancy`, n = 10)
+
+```
+
+As can be seen from the above table of Highest Life expectancy, Ireland tops the chart with avg. Life expectancy of about 83 years.Moreover, all the 10 nations in the list are from the first world nations which are either already well developed or just about to enter the status of being developed. Apart from this , all 10 nations have Avg. Life expectancy over 80yrs, which is way more higher than the global avg. of 68.62 avy across globe over the same time period of 2000 -2015
+
+
+#### Top 10 countries with the **least Life expectancy** across globe, averaged over the period of 2000-2015
+
+```{r}
+
+d2%>% slice_min(`Life expectancy`, n = 10)
+
+```
+
+As can be seen from the table above :-
+
+- Sierra Leone tops the chart with Life Expectancy as low as 48yrs, which is almost 20yrs lower than the global avg of 68 yrs.
+- All the 10 countries are developing nations and all belong to the continent of Africa.
+
+
+#### **Probability density function** of global Avg. Life Expectancies :
+
+Ploting the pdf curve :
+
+```{r}
+p<-ggplot(d2, aes(x=`Life expectancy`)) + 
+  geom_histogram(binwidth=1, color="Blue", fill="orange") +
+  labs( title = "Probability density curve (P.D.F) of global Life Expectancy" , x = "Life Expectancy (in years)") 
+print(p)
+```
+
+According to the Probability density function (pdf) of Avg Life expectancy of different countries over the period of 2000-2015, one can conclude that the most likely average global expected Life expectancy is about **73 year**. 
+Also, the highest Life expectancy across globe is 83yrs which is about 10 years more than the modal value of 73ys.
+
+### Country-wise comparison of top performers : in terms of LIfe Expectancy
+
+Preparing copies of data in relevant format.
+- d3 : a copy of data_clean with a shorter name.
+- d3_2005 : country wise data for the year 2005
+- d3_2014 : country wise data for the year 2014
+
+```{r}
+d3<-data_clean
+d3_2005<-d3 %>% filter(Year == 2005 )
+d3_2014<-d3 %>% filter(Year == 2014 )
+
+print(d3)
+print(d3_2005)
+print(d3_2014)
+```
+#### Plotting the best 5 performers of the year 2005
+
+```{r}
+
+Best_2005<- d3_2005 %>% slice_max(`Life expectancy`, n = 5)
+print(Best_2005)
+barplot(Best_2005$`Life expectancy`,
+main = "Top 5 Countries with Highest `Life expectancy` in 2005)",
+ylab = "Life Expectancy (in years)",
+ylim = c(75,90),
+names.arg = c("Italy","Australia","Canada","France","Spain"),
+col = "Light Grey",
+
+horiz = F )
+```
+
+#### Plotting the best 5 performers of the year 2014
+
+```{r}
+
+Best_2014<- d3_2014 %>% slice_max(`Life expectancy`, n = 5)
+print(Best_2014)
+
+barplot(Best_2014$`Life expectancy`,
+main = "Top 5 Countries with Highest `Life expectancy` in 2014)",
+ylab = "Life Expectancy (in years)",
+ylim = c(75,90),
+names.arg = c("Belgium","Germany","Portugal","Greece","Chile", "Cyprus"),
+col = "Light Blue",
+
+horiz = F )
+```
+
+
+- As can be seen from both the plots, the top performers are still from the first world nations , though the toppers of the past have failed to retain their positions in the chart.
+- Also, as can be seen from the graphs, the Life expectancy value for the top performers is higher in 2014 as compared to 2005, which suggest that world as a whole is moving towards longevity of life.
+
+## Linear Model to predict Life expectancy against the parameter of schooling.
+
+```{r}
+mod <- lm(`Life expectancy` ~ Schooling, data = global)
+summary(mod)
+```
+```{r}
+
+x_grid <- seq(1, 151)
+new_df <- tibble(Schooling = x_grid)
+global %>% mutate(pred = predict(mod))
+
+LE_pred <- global %>% mutate(pred = predict(mod))
+LE_pred %>% ggplot() +
+geom_point(aes(x = Schooling, y = `Life expectancy`), color = "blue") +
+geom_point(aes(x = Schooling, y = pred), color = "red")
+
+```
+
+As can be seen from the above graph :
+- the schooling has a positive correlation with LIfe Expectancy as the curve has a positive slope.
+- As both red and blue dots are majorly close, it suggests that linear model to find the correlation and prediction of Life expectancy is quite good.
+
+# **CONCLUSION**
+
+Avg. Life Expectancy of humans is not a naturally fixed constant but a variable being shaped by various anthropogenic factors too such as Lifestyle habits, spending on Health infrastructure and services, better immunization drives as well as other socio-economic and political factors. Hence, in order to lead a better and more longer life, humans need to define their public policy keeping various factors in mind as analysed above. Hence, with better policy and practices on the line of developed world , Humanity can lead a better, healthier and longer life.
+
+
